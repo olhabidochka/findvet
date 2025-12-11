@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Новий запис - VetBooking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Запис на прийом</h1>
+    <form id="appointment-form" class="form">
+        <div class="form-group">
+            <label>Лікар:</label>
+            <select id="doctor" required>
+                <option value="">Оберіть лікаря...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Послуга:</label>
+            <select id="service" required>
+                <option value="">Оберіть послугу...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Дата:</label>
+            <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+            <label>Час:</label>
+            <input type="time" id="time" required>
+        </div>
+        <div class="form-group">
+            <label>Примітки:</label>
+            <textarea id="notes" placeholder="Додаткова інформація..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary">Записатися</button>
+    </form>
+    <div id="message" class="error" style="display: none;"></div>
+</div>
+<script>
+// Check authentication
+const token = localStorage.getItem('access_token');
+if (!token) {
+    window.location.href = '/login/';
+}
+
+async function loadDoctors() {
+    try {
+        const response = await fetchAPI('/api/doctors/');
+        const data = await response.json();
+        const doctors = data.results || data;
+        document.getElementById('doctor').innerHTML =
+            '<option value="">Оберіть лікаря...</option>' +
+            doctors.map(d =>
+                `<option value="${d.id}">${d.full_name} - ${d.clinic_name}</option>`
+            ).join('');
+        loadServices();
+    } catch (error) {
+        console.error('Error loading doctors:', error);
+    }
+}
+
+async function loadServices() {
+    try {
+        const response = await fetchAPI('/api/services/');
+        const data = await response.json();
+        const services = data.results || data;
+        document.getElementById('service').innerHTML =
+            '<option value="">Оберіть послугу...</option>' +
+            services.map(s =>
+                `<option value="${s.id}">${s.name} (${s.price} грн, ${s.duration_minutes} хв)</option>`
+            ).join('');
+    } catch (error) {
+        console.error('Error loading services:', error);
+    }
+}
+
+// Set minimum date to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('date').setAttribute('min', today);
+
+document.getElementById('appointment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const messageDiv = document.getElementById('message');
+    messageDiv.style.display = 'none';
+    messageDiv.textContent = '';
+
+    const data = {
+        doctor: document.getElementById('doctor').value,
+        service: document.getElementById('service').value,
+        appointment_date: document.getElementById('date').value,
+        appointment_time: document.getElementById('time').value,
+        notes: document.getElementById('notes').value,
+    };
+
+    try {
+        const response = await fetchAPI('/api/appointments/', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Запис успішно створено!');
+            window.location.href = '/appointments/';
+        } else {
+            const error = await response.json();
+            messageDiv.style.display = 'block';
+            messageDiv.textContent = error.detail || error.non_field_errors?.[0] || 'Помилка при створенні запису';
+        }
+    } catch (error) {
+        messageDiv.style.display = 'block';
+        messageDiv.textContent = 'Помилка підключення до сервера';
+    }
+});
+
+loadDoctors();
+</script>
+{% endblock %}

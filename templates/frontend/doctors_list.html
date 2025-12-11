@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Лікарі - VetBooking{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>Наші ветеринари</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="filters-section">
+        <div class="filter-group">
+            <label>Спеціалізація:</label>
+            <select id="specialization-filter">
+                <option value="">Всі спеціалізації</option>
+            </select>
+        </div>
+        <button onclick="applyFilters()" class="btn-primary">Застосувати</button>
+    </div>
+
+    <div id="doctors-grid" class="cards-grid">
+        <div class="loading">Завантаження...</div>
+    </div>
+</div>
+
+<script>
+    async function loadDoctors() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const specialization = urlParams.get('specialization') || '';
+
+            let url = '/api/doctors/?ordering=-rating';
+            if (specialization) url += `&specialization=${specialization}`;
+
+            const response = await fetchAPI(url);
+            const data = await response.json();
+            const doctors = data.results || data;
+
+            const grid = document.getElementById('doctors-grid');
+            grid.innerHTML = doctors.map(doctor => `
+                <div class="card doctor-card">
+                    <img src="${doctor.photo || '/static/images/doctor-placeholder.jpg'}"
+                         alt="${doctor.full_name}">
+                    <div class="card-content">
+                        <h3>${doctor.full_name}</h3>
+                        <p class="specialization">${doctor.specialization_display}</p>
+                        <p class="clinic">🏥 ${doctor.clinic_name}</p>
+                        <p class="experience">Досвід: ${doctor.experience_years} років</p>
+                        <div class="rating">⭐ ${doctor.rating}/5</div>
+                        <a href="/doctors/${doctor.id}/" class="btn-primary">Детальніше</a>
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    function applyFilters() {
+        const specialization = document.getElementById('specialization-filter').value;
+        const params = new URLSearchParams();
+        if (specialization) params.set('specialization', specialization);
+        window.location.href = `/doctors/?${params.toString()}`;
+    }
+
+    loadDoctors();
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Мої записи - VetBooking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Мої записи</h1>
+    <a href="/appointments/create/" class="btn-primary" style="margin-bottom: 2rem;">Новий запис</a>
+    <div id="appointments-list">
+        <div class="loading">Завантаження...</div>
+    </div>
+</div>
+<script>
+async function loadAppointments() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/login/';
+        return;
+    }
+
+    try {
+        const response = await fetchAPI('/api/appointments/');
+        if (!response.ok) {
+            throw new Error('Not authenticated');
+        }
+        const data = await response.json();
+        const appointments = data.results || data;
+
+        const list = document.getElementById('appointments-list');
+        if (appointments.length === 0) {
+            list.innerHTML = '<p>У вас поки немає записів</p>';
+            return;
+        }
+
+        list.innerHTML = appointments.map(apt => `
+            <div class="appointment-card">
+                <h3>${apt.doctor.full_name}</h3>
+                <p>🏥 ${apt.doctor.clinic_name}</p>
+                <p>📅 ${apt.appointment_date} о ${apt.appointment_time}</p>
+                <p><strong>Послуга:</strong> ${apt.service?.name || 'Консультація'}</p>
+                <p><strong>Статус:</strong> <span class="badge">${apt.status_display}</span></p>
+                ${apt.notes ? `<p><strong>Примітки:</strong> ${apt.notes}</p>` : ''}
+                ${apt.status === 'pending' || apt.status === 'confirmed' ?
+                    `<button onclick="cancelAppointment(${apt.id})" class="btn-danger">Скасувати</button>` : ''}
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading appointments:', error);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/login/';
+    }
+}
+
+async function cancelAppointment(id) {
+    if (confirm('Ви впевнені, що хочете скасувати цей запис?')) {
+        try {
+            const response = await fetchAPI(`/api/appointments/${id}/cancel/`, {method: 'POST'});
+            if (response.ok) {
+                alert('Запис скасовано');
+                loadAppointments();
+            } else {
+                alert('Помилка при скасуванні запису');
+            }
+        } catch (error) {
+            alert('Помилка підключення');
+        }
+    }
+}
+
+loadAppointments();
+</script>
+{% endblock %}

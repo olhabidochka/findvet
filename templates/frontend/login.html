@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Вхід - VetBooking{% endblock %}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h1>Вхід</h1>
+        <form id="login-form">
+            <input type="text" id="username" placeholder="Ім'я користувача" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            <button type="submit" class="btn-primary">Увійти</button>
+            <p>Немає акаунту? <a href="/register/">Зареєструватися</a></p>
+        </form>
+        <div id="error-message" class="error" style="display: none;"></div>
+    </div>
+</div>
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('error-message');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const response = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password})
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+            window.location.href = '/';
+        } else {
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'Невірне ім\'я користувача або пароль';
+        }
+    } catch (error) {
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Помилка підключення до сервера';
+    }
+});
+</script>
+{% endblock %}

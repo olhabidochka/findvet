@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Профіль - VetBooking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1>Мій профіль</h1>
+    <div id="profile-content">
+        <div class="loading">Завантаження...</div>
+    </div>
+</div>
+<script>
+async function loadProfile() {
+    const token = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    console.log('Access token exists:', !!token);
+    console.log('Refresh token exists:', !!refreshToken);
+
+    if (!token) {
+        console.log('No access token, redirecting to login');
+        window.location.href = '/login/';
+        return;
+    }
+
+    try {
+        console.log('Fetching profile...');
+        const response = await fetchAPI('/api/auth/profile/');
+        console.log('Profile response status:', response.status);
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.log('Unauthorized, redirecting to login');
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                window.location.href = '/login/';
+                return;
+            }
+            throw new Error('Failed to load profile');
+        }
+
+        const user = await response.json();
+        console.log('Profile loaded successfully');
+
+        document.getElementById('profile-content').innerHTML = `
+            <div class="profile-info">
+                <h2>${user.first_name} ${user.last_name}</h2>
+                <p><strong>Ім'я користувача:</strong> ${user.username}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Телефон:</strong> ${user.phone || 'Не вказано'}</p>
+                <p><strong>Адреса:</strong> ${user.address || 'Не вказано'}</p>
+                <p><strong>Роль:</strong> ${user.role}</p>
+                <div style="margin-top: 2rem;">
+                    <a href="/appointments/" class="btn-primary">Мої записи</a>
+                    <button onclick="logout()" class="btn-danger" style="margin-left: 1rem;">Вийти</button>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        document.getElementById('profile-content').innerHTML = `
+            <div class="error">
+                <p>Помилка завантаження профілю: ${error.message}</p>
+                <p>Спробуйте <a href="/login/">увійти знову</a></p>
+            </div>
+        `;
+    }
+}
+
+function logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    window.location.href = '/login/';
+}
+
+loadProfile();
+</script>
+{% endblock %}

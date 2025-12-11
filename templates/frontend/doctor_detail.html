@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Лікар - VetBooking{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div id="doctor-detail">
+        <div class="loading">Завантаження...</div>
+    </div>
+</div>
+
+<script>
+    const doctorId = {{ doctor_id }};
+
+    async function loadDoctor() {
+        try {
+            const response = await fetchAPI(`/api/doctors/${doctorId}/`);
+            const doctor = await response.json();
+
+            document.getElementById('doctor-detail').innerHTML = `
+                <div class="detail-header">
+                    <img src="${doctor.photo || '/static/images/doctor-placeholder.jpg'}"
+                         alt="${doctor.full_name}">
+                    <div class="detail-header-info">
+                        <h1>${doctor.full_name}</h1>
+                        <p class="specialization">${doctor.specialization_display}</p>
+                        <div class="rating">⭐ ${doctor.rating}/5</div>
+                        <p>🏥 ${doctor.clinic.name}</p>
+                        <p>📞 ${doctor.phone}</p>
+                        <p>✉️ ${doctor.email}</p>
+                        <button onclick="addToFavorites()" class="btn-secondary" id="favorite-btn">
+                            ❤️ Додати в обрані
+                        </button>
+                        <a href="/appointments/create/?doctor=${doctorId}" class="btn-primary">
+                            Записатися на прийом
+                        </a>
+                    </div>
+                </div>
+
+                <div class="detail-content">
+                    <section class="section">
+                        <h2>Про лікаря</h2>
+                        <p><strong>Досвід:</strong> ${doctor.experience_years} років</p>
+                        <p>${doctor.bio}</p>
+                    </section>
+
+                    <section class="section">
+                        <h2>Освіта</h2>
+                        <p>${doctor.education}</p>
+                    </section>
+
+                    <section class="section">
+                        <h2>Розклад роботи</h2>
+                        <div class="schedule">
+                            ${doctor.schedules.map(s => `
+                                <div class="schedule-item">
+                                    <strong>${s.weekday_display}:</strong>
+                                    ${s.start_time} - ${s.end_time}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    async function addToFavorites() {
+        try {
+            await fetchAPI(`/api/doctors/${doctorId}/add_to_favorites/`, {
+                method: 'POST'
+            });
+            alert('Додано в обрані!');
+            document.getElementById('favorite-btn').disabled = true;
+        } catch (error) {
+            alert('Помилка. Можливо, ви не авторизовані.');
+        }
+    }
+
+    loadDoctor();
+</script>
+{% endblock %}

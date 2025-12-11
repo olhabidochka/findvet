@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Послуги - VetBooking{% endblock %}
+{% block content %}
+<div class="page-header"><div class="container"><h1>Послуги</h1></div></div>
+<div class="container"><div id="services-grid" class="cards-grid"></div></div>
+<script>
+async function loadServices() {
+    const response = await fetchAPI('/api/services/');
+    const data = await response.json();
+    const services = data.results || data;
+    document.getElementById('services-grid').innerHTML = services.map(s => `
+        <div class="card"><h3>${s.name}</h3><p>${s.service_type_display}</p>
+        <p>${s.description}</p><div class="service-footer">
+        <span>${s.price} грн</span><span>${s.duration_minutes} хв</span></div></div>
+    `).join('');
+}
+loadServices();
+</script>
+{% endblock %}

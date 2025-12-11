@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ветеринарний Сервіс{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        // Helper function for API calls - defined globally
+        async function fetchAPI(url, options = {}) {
+            const token = localStorage.getItem('access_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, {
+                ...options,
+                headers,
+            });
+
+            if (response.status === 401) {
+                // Token expired, try to refresh
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    try {
+                        const refreshResponse = await fetch('/api/auth/refresh/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refresh: refreshToken }),
+                        });
+
+                        if (refreshResponse.ok) {
+                            const data = await refreshResponse.json();
+                            localStorage.setItem('access_token', data.access);
+                            if (data.refresh) {
+                                localStorage.setItem('refresh_token', data.refresh);
+                            }
+                            // Retry original request with new token
+                            headers['Authorization'] = `Bearer ${data.access}`;
+                            return fetch(url, { ...options, headers });
+                        } else {
+                            // Refresh failed, clear tokens
+                            localStorage.removeItem('access_token');
+                            localStorage.removeItem('refresh_token');
+                            return response;
+                        }
+                    } catch (error) {
+                        console.error('Token refresh error:', error);
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('refresh_token');
+                        return response;
+                    }
+                } else {
+                    // No refresh token available
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                }
+            }
+
+            return response;
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login/';
+        }
+    </script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <a href="/">🐾 VetBooking</a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/">Головна</a></li>
+                <li><a href="/clinics/">Клініки</a></li>
+                <li><a href="/doctors/">Лікарі</a></li>
+                <li><a href="/services/">Послуги</a></li>
+                <li><a href="/about/">Про нас</a></li>
+            </ul>
+            <div class="nav-auth" id="nav-auth">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>VetBooking</h3>
+                    <p>Ваш надійний партнер у догляді за домашніми тваринами</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Контакти</h4>
+                    <p>Email: info@vetbooking.com</p>
+                    <p>Телефон: +380 XX XXX XXXX</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навігація</h4>
+                    <ul>
+                        <li><a href="/clinics/">Клініки</a></li>
+                        <li><a href="/doctors/">Лікарі</a></li>
+                        <li><a href="/services/">Послуги</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 VetBooking. Всі права захищені.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Check authentication status and update nav
+        const token = localStorage.getItem('access_token');
+        const navAuth = document.getElementById('nav-auth');
+
+        if (token) {
+            navAuth.innerHTML = `
+                <a href="/appointments/" class="nav-link">Мої записи</a>
+                <a href="/profile/" class="nav-link">Профіль</a>
+                <button onclick="logout()" class="btn-logout">Вийти</button>
+            `;
+        } else {
+            navAuth.innerHTML = `
+                <a href="/login/" class="btn-primary">Увійти</a>
+                <a href="/register/" class="btn-secondary">Реєстрація</a>
+            `;
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

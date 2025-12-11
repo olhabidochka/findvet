@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Реєстрація - VetBooking{% endblock %}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box">
+        <h1>Реєстрація</h1>
+        <form id="register-form">
+            <input type="text" id="username" placeholder="Ім'я користувача" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="text" id="first_name" placeholder="Ім'я" required>
+            <input type="text" id="last_name" placeholder="Прізвище" required>
+            <input type="tel" id="phone" placeholder="Телефон">
+            <input type="password" id="password" placeholder="Пароль" required>
+            <input type="password" id="password2" placeholder="Підтвердіть пароль" required>
+            <button type="submit" class="btn-primary">Зареєструватися</button>
+            <p>Вже є акаунт? <a href="/login/">Увійти</a></p>
+        </form>
+        <div id="error-message" class="error" style="display: none;"></div>
+    </div>
+</div>
+<script>
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('error-message');
+    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
+
+    const data = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        first_name: document.getElementById('first_name').value,
+        last_name: document.getElementById('last_name').value,
+        phone: document.getElementById('phone').value,
+        password: document.getElementById('password').value,
+        password2: document.getElementById('password2').value,
+    };
+
+    if (data.password !== data.password2) {
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Паролі не співпадають';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/auth/register/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            localStorage.setItem('access_token', result.access);
+            localStorage.setItem('refresh_token', result.refresh);
+            window.location.href = '/';
+        } else {
+            const error = await response.json();
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = error.username ? error.username[0] :
+                                  error.email ? error.email[0] :
+                                  error.password ? error.password[0] :
+                                  'Помилка реєстрації. Перевірте введені дані.';
+        }
+    } catch (error) {
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = 'Помилка підключення до сервера';
+    }
+});
+</script>
+{% endblock %}

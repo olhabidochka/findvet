@@ -4,7 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8fc83b75-2c99-4100-84f5-4f69de664398" name="Changes" comment="" />
+    <list default="true" id="8fc83b75-2c99-4100-84f5-4f69de664398" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vet_booking/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/vet_booking/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vet_booking/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/vet_booking/urls.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -40,6 +44,15 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/frontend" />
+      <recent name="$PROJECT_DIR$/appointments" />
+      <recent name="$PROJECT_DIR$/reviews" />
+      <recent name="$PROJECT_DIR$/services" />
+      <recent name="$PROJECT_DIR$/doctors" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -58,7 +71,7 @@
       <workItem from="1765369021002" duration="40000" />
       <workItem from="1765370119095" duration="125000" />
       <workItem from="1765370376269" duration="111000" />
-      <workItem from="1765370495108" duration="942000" />
+      <workItem from="1765370495108" duration="6973000" />
     </task>
     <servers />
   </component>

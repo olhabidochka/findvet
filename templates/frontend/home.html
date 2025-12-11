@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Головна - VetBooking{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <h1>Знайдіть кращого ветеринара для вашого улюбленця</h1>
+        <p>Швидкий та зручний запис до ветеринарних клінік по всій Україні</p>
+        <div class="hero-search">
+            <input type="text" id="search-input" placeholder="Пошук клінік за містом або спеціалізацією...">
+            <button onclick="searchClinics()" class="btn-primary">Шукати</button>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2>Чому обирають нас</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🏥</div>
+                <h3>Перевірені клініки</h3>
+                <p>Всі клініки проходять ретельну перевірку та мають необхідні ліцензії</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⏰</div>
+                <h3>Швидкий запис</h3>
+                <p>Запишіться на прийом за кілька кліків без дзвінків та очікування</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3>Зручна локація</h3>
+                <p>Знайдіть найближчу клініку за допомогою інтерактивної карти</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⭐</div>
+                <h3>Рейтинги та відгуки</h3>
+                <p>Читайте реальні відгуки клієнтів та обирайте найкращих лікарів</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta">
+    <div class="container">
+        <h2>Готові записатися?</h2>
+        <p>Приєднуйтесь до тисяч задоволених власників тварин</p>
+        <div class="cta-buttons">
+            <a href="/clinics/" class="btn-primary">Переглянути клініки</a>
+            <a href="/doctors/" class="btn-secondary">Знайти лікаря</a>
+        </div>
+    </div>
+</section>
+
+<script>
+    function searchClinics() {
+        const query = document.getElementById('search-input').value;
+        window.location.href = `/clinics/?search=${encodeURIComponent(query)}`;
+    }
+
+    // Allow search on Enter key
+    document.getElementById('search-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchClinics();
+        }
+    });
+</script>
+{% endblock %}
