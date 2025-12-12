@@ -11,11 +11,11 @@ class Clinic(models.Model):
     email = models.EmailField(verbose_name='Email')
     website = models.URLField(blank=True, verbose_name='Веб-сайт')
 
-    # Геолокація
+
     latitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name='Широта')
     longitude = models.DecimalField(max_digits=9, decimal_places=6, verbose_name='Довгота')
 
-    # Години роботи
+
     working_hours_start = models.TimeField(verbose_name='Початок роботи')
     working_hours_end = models.TimeField(verbose_name='Кінець роботи')
     working_days = models.CharField(max_length=100, default='Пн-Пт', verbose_name='Робочі дні')

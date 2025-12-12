@@ -41,6 +41,8 @@
     let clinics = [];
 
     async function loadClinics() {
+        const grid = document.getElementById('clinics-grid');
+
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const search = urlParams.get('search') || '';
@@ -51,37 +53,48 @@
             if (search) url += `&search=${search}`;
             if (city) url += `&city=${city}`;
 
-            const response = await fetchAPI(url);
+            console.log('Fetching clinics from:', url);
+
+            const response = await fetch(url);
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
+            console.log('Clinics data:', data);
+
             clinics = data.results || data;
 
             displayClinics();
             populateCityFilter();
         } catch (error) {
             console.error('Error loading clinics:', error);
-            document.getElementById('clinics-grid').innerHTML =
-                '<p class="error">Помилка завантаження клінік</p>';
+            grid.innerHTML = '<p class="error">Помилка завантаження клінік. Спробуйте пізніше.</p>';
         }
     }
 
     function displayClinics() {
         const grid = document.getElementById('clinics-grid');
 
-        if (clinics.length === 0) {
+        if (!clinics || clinics.length === 0) {
             grid.innerHTML = '<p class="no-results">Клініки не знайдено</p>';
             return;
         }
 
         grid.innerHTML = clinics.map(clinic => `
             <div class="card clinic-card">
-                <img src="${clinic.image || '/static/images/clinic-placeholder.jpg'}"
-                     alt="${clinic.name}">
+                ${clinic.image ?
+                    `<img src="${clinic.image}" alt="${clinic.name}">` :
+                    `<div style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">🏥</div>`
+                }
                 <div class="card-content">
                     <h3>${clinic.name}</h3>
                     <p class="clinic-address">📍 ${clinic.address}, ${clinic.city}</p>
                     <p class="clinic-phone">📞 ${clinic.phone}</p>
                     <div class="clinic-specializations">
-                        ${clinic.specializations.map(s =>
+                        ${(clinic.specializations || []).map(s =>
                             `<span class="badge">${s.specialization_display}</span>`
                         ).join('')}
                     </div>
@@ -121,10 +134,10 @@
         window.location.href = `/clinics/?${params.toString()}`;
     }
 
-    // Initialize
+
     loadClinics();
 
-    // Set current filter values
+
     const urlParams = new URLSearchParams(window.location.search);
     document.getElementById('search').value = urlParams.get('search') || '';
     document.getElementById('sort-filter').value = urlParams.get('ordering') || '-rating';

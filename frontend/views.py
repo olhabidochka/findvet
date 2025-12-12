@@ -47,3 +47,7 @@ def register_page(request):
 def about(request):
     """About us page"""
     return render(request, 'frontend/about.html')
+
+def favorites(request):
+    """Favorite doctors page"""
+    return render(request, 'frontend/favorites.html')

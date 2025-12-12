@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Обрані лікарі - VetBooking{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <h1>Обрані лікарі</h1>
+        <p>Ваші улюблені ветеринари</p>
+    </div>
+</div>
+
+<div class="container">
+    <div id="favorites-grid" class="cards-grid">
+        <div class="loading">Завантаження...</div>
+    </div>
+</div>
+
+<script>
+async function loadFavorites() {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        window.location.href = '/login/';
+        return;
+    }
+
+    try {
+        const response = await fetchAPI('/api/favorites/');
+        if (!response.ok) {
+            throw new Error('Failed to load favorites');
+        }
+
+        const data = await response.json();
+        const favorites = data.results || data;
+
+        const grid = document.getElementById('favorites-grid');
+
+        if (favorites.length === 0) {
+            grid.innerHTML = `
+                <div class="no-results">
+                    <p>У вас поки немає обраних лікарів</p>
+                    <a href="/doctors/" class="btn-primary">Знайти лікарів</a>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = favorites.map(fav => {
+            const doctor = fav.doctor;
+            return `
+                <div class="card doctor-card">
+                    <img src="${doctor.photo || '/static/images/doctor-placeholder.jpg'}"
+                         alt="${doctor.full_name}">
+                    <div class="card-content">
+                        <h3>${doctor.full_name}</h3>
+                        <p class="specialization">${doctor.specialization_display}</p>
+                        <p class="clinic">🏥 ${doctor.clinic_name}</p>
+                        <p class="experience">Досвід: ${doctor.experience_years} років</p>
+                        <div class="rating">⭐ ${doctor.rating}/5</div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <a href="/doctors/${doctor.id}/" class="btn-primary" style="flex: 1; text-align: center;">Детальніше</a>
+                            <button onclick="removeFromFavorites(${doctor.id})" class="btn-danger">❤️ Видалити</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading favorites:', error);
+        document.getElementById('favorites-grid').innerHTML = `
+            <p class="error">Помилка завантаження обраних лікарів</p>
+        `;
+    }
+}
+
+async function removeFromFavorites(doctorId) {
+    if (!confirm('Видалити лікаря з обраних?')) {
+        return;
+    }
+
+    try {
+        const response = await fetchAPI(`/api/doctors/${doctorId}/remove_from_favorites/`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            alert('Видалено з обраних');
+            loadFavorites();
+        } else {
+            alert('Помилка при видаленні');
+        }
+    } catch (error) {
+        alert('Помилка підключення');
+    }
+}
+
+loadFavorites();
+</script>
+{% endblock %}

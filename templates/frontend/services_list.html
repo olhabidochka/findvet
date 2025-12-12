@@ -1,19 +1,159 @@
 {% extends 'base.html' %}
 {% block title %}Послуги - VetBooking{% endblock %}
+
 {% block content %}
-<div class="page-header"><div class="container"><h1>Послуги</h1></div></div>
-<div class="container"><div id="services-grid" class="cards-grid"></div></div>
+<div class="page-header">
+    <div class="container">
+        <h1>Послуги</h1>
+        <p>Оберіть послугу та запишіться на прийом</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="filters-section">
+        <div class="filter-group">
+            <label>Тип послуги:</label>
+            <select id="service-type-filter">
+                <option value="">Всі типи</option>
+                <option value="consultation">Консультація</option>
+                <option value="vaccination">Вакцинація</option>
+                <option value="surgery">Хірургія</option>
+                <option value="dental">Стоматологія</option>
+                <option value="grooming">Догляд</option>
+                <option value="lab_test">Лабораторні тести</option>
+                <option value="xray">Рентген</option>
+                <option value="ultrasound">УЗД</option>
+                <option value="therapy">Терапія</option>
+                <option value="emergency">Екстрена допомога</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Клініка:</label>
+            <select id="clinic-filter">
+                <option value="">Всі клініки</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Сортування:</label>
+            <select id="sort-filter">
+                <option value="price">За ціною</option>
+                <option value="-price">За ціною (спадання)</option>
+                <option value="name">За назвою</option>
+                <option value="duration_minutes">За тривалістю</option>
+            </select>
+        </div>
+        <button onclick="applyFilters()" class="btn-primary">Застосувати</button>
+    </div>
+
+    <div id="services-grid" class="cards-grid">
+        <div class="loading">Завантаження...</div>
+    </div>
+</div>
+
 <script>
+let services = [];
+let clinics = [];
+
 async function loadServices() {
-    const response = await fetchAPI('/api/services/');
-    const data = await response.json();
-    const services = data.results || data;
-    document.getElementById('services-grid').innerHTML = services.map(s => `
-        <div class="card"><h3>${s.name}</h3><p>${s.service_type_display}</p>
-        <p>${s.description}</p><div class="service-footer">
-        <span>${s.price} грн</span><span>${s.duration_minutes} хв</span></div></div>
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const serviceType = urlParams.get('service_type') || '';
+        const clinic = urlParams.get('clinic') || '';
+        const ordering = urlParams.get('ordering') || 'service_type';
+
+        let url = `/api/services/?ordering=${ordering}`;
+        if (serviceType) url += `&service_type=${serviceType}`;
+        if (clinic) url += `&clinic=${clinic}`;
+
+        const response = await fetchAPI(url);
+        const data = await response.json();
+        services = data.results || data;
+
+        displayServices();
+        loadClinics();
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('services-grid').innerHTML =
+            '<p class="error">Помилка завантаження послуг</p>';
+    }
+}
+
+function displayServices() {
+    const grid = document.getElementById('services-grid');
+
+    if (services.length === 0) {
+        grid.innerHTML = '<p class="no-results">Послуги не знайдено</p>';
+        return;
+    }
+
+    grid.innerHTML = services.map(service => `
+        <div class="card service-card">
+            <div class="card-content">
+                <h3>${service.name}</h3>
+                <p class="service-type">${service.service_type_display}</p>
+                <p class="description">${service.description}</p>
+                <p class="clinic-name">🏥 ${service.clinic_name}</p>
+                <div class="service-footer">
+                    <div>
+                        <span class="price">${service.price} грн</span>
+                        <span class="duration">⏱ ${service.duration_minutes} хв</span>
+                    </div>
+                    <button onclick="bookService(${service.id})" class="btn-primary">Записатися</button>
+                </div>
+            </div>
+        </div>
     `).join('');
 }
+
+async function loadClinics() {
+    try {
+        const response = await fetchAPI('/api/clinics/');
+        const data = await response.json();
+        clinics = data.results || data;
+
+        const select = document.getElementById('clinic-filter');
+        const currentClinic = new URLSearchParams(window.location.search).get('clinic') || '';
+
+        clinics.forEach(clinic => {
+            const option = document.createElement('option');
+            option.value = clinic.id;
+            option.textContent = clinic.name;
+            if (clinic.id == currentClinic) option.selected = true;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading clinics:', error);
+    }
+}
+
+function applyFilters() {
+    const serviceType = document.getElementById('service-type-filter').value;
+    const clinic = document.getElementById('clinic-filter').value;
+    const ordering = document.getElementById('sort-filter').value;
+
+    const params = new URLSearchParams();
+    if (serviceType) params.set('service_type', serviceType);
+    if (clinic) params.set('clinic', clinic);
+    if (ordering) params.set('ordering', ordering);
+
+    window.location.href = `/services/?${params.toString()}`;
+}
+
+function bookService(serviceId) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Будь ласка, увійдіть в систему для запису на прийом');
+        window.location.href = '/login/';
+        return;
+    }
+    window.location.href = `/appointments/create/?service=${serviceId}`;
+}
+
 loadServices();
+
+
+const urlParams = new URLSearchParams(window.location.search);
+document.getElementById('service-type-filter').value = urlParams.get('service_type') || '';
+document.getElementById('sort-filter').value = urlParams.get('ordering') || 'service_type';
 </script>
 {% endblock %}

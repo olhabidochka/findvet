@@ -6,6 +6,7 @@
 <div class="page-header">
     <div class="container">
         <h1>Наші ветеринари</h1>
+        <p>Знайдіть досвідченого спеціаліста для вашого улюбленця</p>
     </div>
 </div>
 
@@ -15,9 +16,32 @@
             <label>Спеціалізація:</label>
             <select id="specialization-filter">
                 <option value="">Всі спеціалізації</option>
+                <option value="general">Загальна практика</option>
+                <option value="surgeon">Хірург</option>
+                <option value="dentist">Стоматолог</option>
+                <option value="dermatologist">Дерматолог</option>
+                <option value="cardiologist">Кардіолог</option>
+                <option value="ophthalmologist">Офтальмолог</option>
+                <option value="orthopedist">Ортопед</option>
+                <option value="neurologist">Невролог</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Клініка:</label>
+            <select id="clinic-filter">
+                <option value="">Всі клініки</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Сортування:</label>
+            <select id="sort-filter">
+                <option value="-rating">За рейтингом</option>
+                <option value="last_name">За прізвищем</option>
+                <option value="-experience_years">За досвідом</option>
             </select>
         </div>
         <button onclick="applyFilters()" class="btn-primary">Застосувати</button>
+        <button onclick="resetFilters()" class="btn-secondary">Скинути</button>
     </div>
 
     <div id="doctors-grid" class="cards-grid">
@@ -26,45 +50,108 @@
 </div>
 
 <script>
+    let doctors = [];
+    let clinics = [];
+
     async function loadDoctors() {
+        const grid = document.getElementById('doctors-grid');
+
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const specialization = urlParams.get('specialization') || '';
+            const clinic = urlParams.get('clinic') || '';
+            const ordering = urlParams.get('ordering') || '-rating';
 
-            let url = '/api/doctors/?ordering=-rating';
+            let url = `/api/doctors/?ordering=${ordering}`;
             if (specialization) url += `&specialization=${specialization}`;
+            if (clinic) url += `&clinic=${clinic}`;
 
-            const response = await fetchAPI(url);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to load doctors');
+
             const data = await response.json();
-            const doctors = data.results || data;
+            doctors = data.results || data;
 
-            const grid = document.getElementById('doctors-grid');
-            grid.innerHTML = doctors.map(doctor => `
-                <div class="card doctor-card">
-                    <img src="${doctor.photo || '/static/images/doctor-placeholder.jpg'}"
-                         alt="${doctor.full_name}">
-                    <div class="card-content">
-                        <h3>${doctor.full_name}</h3>
-                        <p class="specialization">${doctor.specialization_display}</p>
-                        <p class="clinic">🏥 ${doctor.clinic_name}</p>
-                        <p class="experience">Досвід: ${doctor.experience_years} років</p>
-                        <div class="rating">⭐ ${doctor.rating}/5</div>
-                        <a href="/doctors/${doctor.id}/" class="btn-primary">Детальніше</a>
-                    </div>
-                </div>
-            `).join('');
+            displayDoctors();
+            loadClinics();
         } catch (error) {
             console.error('Error:', error);
+            grid.innerHTML = '<p class="error">Помилка завантаження лікарів</p>';
+        }
+    }
+
+    function displayDoctors() {
+        const grid = document.getElementById('doctors-grid');
+
+        if (!doctors || doctors.length === 0) {
+            grid.innerHTML = '<p class="no-results">Лікарів не знайдено</p>';
+            return;
+        }
+
+        grid.innerHTML = doctors.map(doctor => `
+            <div class="card doctor-card">
+                ${doctor.photo ?
+                    `<img src="${doctor.photo}" alt="${doctor.full_name}">` :
+                    `<div style="height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem;">👨‍⚕️</div>`
+                }
+                <div class="card-content">
+                    <h3>${doctor.full_name}</h3>
+                    <p class="specialization">${doctor.specialization_display}</p>
+                    <p class="clinic">🏥 ${doctor.clinic_name}</p>
+                    <p class="experience">📚 Досвід: ${doctor.experience_years} років</p>
+                    <div class="rating">⭐ ${doctor.rating}/5</div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                        <a href="/doctors/${doctor.id}/" class="btn-secondary" style="flex: 1; text-align: center;">Детальніше</a>
+                        <a href="/appointments/create/?doctor=${doctor.id}" class="btn-primary" style="flex: 1; text-align: center;">Записатися</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function loadClinics() {
+        try {
+            const response = await fetch('/api/clinics/');
+            const data = await response.json();
+            clinics = data.results || data;
+
+            const select = document.getElementById('clinic-filter');
+            const currentClinic = new URLSearchParams(window.location.search).get('clinic') || '';
+
+            clinics.forEach(clinic => {
+                const option = document.createElement('option');
+                option.value = clinic.id;
+                option.textContent = clinic.name;
+                if (clinic.id == currentClinic) option.selected = true;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading clinics:', error);
         }
     }
 
     function applyFilters() {
         const specialization = document.getElementById('specialization-filter').value;
+        const clinic = document.getElementById('clinic-filter').value;
+        const ordering = document.getElementById('sort-filter').value;
+
         const params = new URLSearchParams();
         if (specialization) params.set('specialization', specialization);
+        if (clinic) params.set('clinic', clinic);
+        if (ordering) params.set('ordering', ordering);
+
         window.location.href = `/doctors/?${params.toString()}`;
     }
 
+    function resetFilters() {
+        window.location.href = '/doctors/';
+    }
+
     loadDoctors();
+
+    // Set current filter values
+    const urlParams = new URLSearchParams(window.location.search);
+    document.getElementById('specialization-filter').value = urlParams.get('specialization') || '';
+    document.getElementById('sort-filter').value = urlParams.get('ordering') || '-rating';
 </script>
 {% endblock %}

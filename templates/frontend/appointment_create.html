@@ -5,50 +5,79 @@
     <h1>Запис на прийом</h1>
     <form id="appointment-form" class="form">
         <div class="form-group">
-            <label>Лікар:</label>
+            <label>Лікар: <span style="color: red;">*</span></label>
             <select id="doctor" required>
                 <option value="">Оберіть лікаря...</option>
             </select>
+            <small>Оберіть лікаря для запису на прийом</small>
         </div>
+
         <div class="form-group">
-            <label>Послуга:</label>
+            <label>Послуга: <span style="color: red;">*</span></label>
             <select id="service" required>
                 <option value="">Оберіть послугу...</option>
             </select>
+            <small>Тип послуги та її вартість</small>
         </div>
+
         <div class="form-group">
-            <label>Дата:</label>
+            <label>Дата: <span style="color: red;">*</span></label>
             <input type="date" id="date" required>
+            <small>Оберіть зручну дату для візиту</small>
         </div>
+
         <div class="form-group">
-            <label>Час:</label>
+            <label>Час: <span style="color: red;">*</span></label>
             <input type="time" id="time" required>
+            <small>Оберіть зручний час</small>
         </div>
+
         <div class="form-group">
             <label>Примітки:</label>
-            <textarea id="notes" placeholder="Додаткова інформація..."></textarea>
+            <textarea id="notes" placeholder="Додаткова інформація про стан тварини, особливості..."></textarea>
+            <small>Необов'язково: додайте будь-яку важливу інформацію</small>
         </div>
-        <button type="submit" class="btn-primary">Записатися</button>
+
+        <div style="background: #e3f2fd; padding: 1rem; border-radius: 6px; margin: 1rem 0;">
+            <h4 style="margin-bottom: 0.5rem;">📋 Підсумок запису:</h4>
+            <p id="summary-doctor" style="margin: 0.25rem 0;">Лікар: <em>не обрано</em></p>
+            <p id="summary-service" style="margin: 0.25rem 0;">Послуга: <em>не обрано</em></p>
+            <p id="summary-date" style="margin: 0.25rem 0;">Дата та час: <em>не обрано</em></p>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width: 100%;">✓ Підтвердити запис</button>
     </form>
     <div id="message" class="error" style="display: none;"></div>
 </div>
+
 <script>
-// Check authentication
 const token = localStorage.getItem('access_token');
 if (!token) {
     window.location.href = '/login/';
 }
 
+let doctors = [];
+let services = [];
+
 async function loadDoctors() {
     try {
         const response = await fetchAPI('/api/doctors/');
         const data = await response.json();
-        const doctors = data.results || data;
-        document.getElementById('doctor').innerHTML =
-            '<option value="">Оберіть лікаря...</option>' +
+        doctors = data.results || data;
+
+        const doctorSelect = document.getElementById('doctor');
+        doctorSelect.innerHTML = '<option value="">Оберіть лікаря...</option>' +
             doctors.map(d =>
-                `<option value="${d.id}">${d.full_name} - ${d.clinic_name}</option>`
+                `<option value="${d.id}">${d.full_name} - ${d.specialization_display} (${d.clinic_name})</option>`
             ).join('');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const doctorId = urlParams.get('doctor');
+        if (doctorId) {
+            doctorSelect.value = doctorId;
+            updateSummary();
+        }
+
         loadServices();
     } catch (error) {
         console.error('Error loading doctors:', error);
@@ -59,18 +88,52 @@ async function loadServices() {
     try {
         const response = await fetchAPI('/api/services/');
         const data = await response.json();
-        const services = data.results || data;
-        document.getElementById('service').innerHTML =
-            '<option value="">Оберіть послугу...</option>' +
+        services = data.results || data;
+
+        const serviceSelect = document.getElementById('service');
+        serviceSelect.innerHTML = '<option value="">Оберіть послугу...</option>' +
             services.map(s =>
-                `<option value="${s.id}">${s.name} (${s.price} грн, ${s.duration_minutes} хв)</option>`
+                `<option value="${s.id}">${s.name} - ${s.price} грн (${s.duration_minutes} хв) - ${s.clinic_name}</option>`
             ).join('');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const serviceId = urlParams.get('service');
+        if (serviceId) {
+            serviceSelect.value = serviceId;
+            updateSummary();
+        }
     } catch (error) {
         console.error('Error loading services:', error);
     }
 }
 
-// Set minimum date to today
+document.getElementById('doctor').addEventListener('change', updateSummary);
+document.getElementById('service').addEventListener('change', updateSummary);
+document.getElementById('date').addEventListener('change', updateSummary);
+document.getElementById('time').addEventListener('change', updateSummary);
+
+function updateSummary() {
+    const doctorId = document.getElementById('doctor').value;
+    const serviceId = document.getElementById('service').value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+
+    const doctor = doctors.find(d => d.id == doctorId);
+    const service = services.find(s => s.id == serviceId);
+
+    document.getElementById('summary-doctor').innerHTML = doctor
+        ? `Лікар: <strong>${doctor.full_name}</strong> (${doctor.specialization_display})`
+        : 'Лікар: <em>не обрано</em>';
+
+    document.getElementById('summary-service').innerHTML = service
+        ? `Послуга: <strong>${service.name}</strong> - ${service.price} грн`
+        : 'Послуга: <em>не обрано</em>';
+
+    document.getElementById('summary-date').innerHTML = date && time
+        ? `Дата та час: <strong>${new Date(date).toLocaleDateString('uk-UA')} о ${time}</strong>`
+        : 'Дата та час: <em>не обрано</em>';
+}
+
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('date').setAttribute('min', today);
 
@@ -95,7 +158,7 @@ document.getElementById('appointment-form').addEventListener('submit', async (e)
         });
 
         if (response.ok) {
-            alert('Запис успішно створено!');
+            alert('✓ Запис успішно створено! Очікуйте підтвердження.');
             window.location.href = '/appointments/';
         } else {
             const error = await response.json();
