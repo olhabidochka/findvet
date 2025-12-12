@@ -72,7 +72,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         appointment.status = 'cancelled'
         appointment.save()
 
-        # Try to delete Google Calendar event
+
         if appointment.google_calendar_event_id:
             try:
                 calendar_service = GoogleCalendarService()
@@ -91,7 +91,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     def confirm(self, request, pk=None):
         appointment = self.get_object()
 
-        # Only doctors or admins can confirm
+
         if request.user.role not in ['doctor', 'admin']:
             return Response(
                 {'detail': 'Недостатньо прав.'},

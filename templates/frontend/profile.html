@@ -7,9 +7,44 @@
         <div class="loading">Завантаження...</div>
     </div>
 
+    <!-- User Reviews Section -->
+    <div style="margin-top: 3rem;">
+        <h2>Мої відгуки</h2>
 
+        <!-- Tabs for Clinic and Doctor Reviews -->
+        <div style="display: flex; gap: 1rem; margin: 1rem 0; border-bottom: 2px solid #e5e7eb;">
+            <button onclick="switchTab('clinic')" id="clinic-tab" class="tab-button active-tab">
+                Відгуки про клініки
+            </button>
+            <button onclick="switchTab('doctor')" id="doctor-tab" class="tab-button">
+                Відгуки про лікарів
+            </button>
+        </div>
+
+        <!-- Clinic Reviews Tab -->
+        <div id="clinic-reviews-section">
+            <button onclick="openReviewModal('clinic')" class="btn-primary" style="margin-bottom: 1rem;">
+                ➕ Додати відгук про клініку
+            </button>
+            <div id="clinic-reviews-list">
+                <div class="loading">Завантаження відгуків...</div>
+            </div>
+        </div>
+
+        <!-- Doctor Reviews Tab -->
+        <div id="doctor-reviews-section" style="display: none;">
+            <button onclick="openReviewModal('doctor')" class="btn-primary" style="margin-bottom: 1rem;">
+                ➕ Додати відгук про лікаря
+            </button>
+            <div id="doctor-reviews-list">
+                <div class="loading">Завантаження відгуків...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
     <div id="edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <h2>Редагувати профіль</h2>
             <form id="edit-form" class="form">
                 <div class="form-group">
@@ -37,16 +72,115 @@
                     <button type="button" onclick="closeEditModal()" class="btn-secondary">Скасувати</button>
                 </div>
             </form>
-            <div id="edit-error" class="error" style="display: none;"></div>
+            <div id="edit-error" class="error"></div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="review-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <h2 id="review-modal-title">Додати відгук</h2>
+            <form id="review-form" class="form">
+                <div class="form-group">
+                    <label id="review-entity-label">Оберіть клініку:</label>
+                    <select id="review-entity" required>
+                        <option value="">Оберіть...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Рейтинг:</label>
+                    <div style="display: flex; gap: 0.5rem; font-size: 2rem;">
+                        <span class="star" data-rating="1" onclick="setRating(1)">☆</span>
+                        <span class="star" data-rating="2" onclick="setRating(2)">☆</span>
+                        <span class="star" data-rating="3" onclick="setRating(3)">☆</span>
+                        <span class="star" data-rating="4" onclick="setRating(4)">☆</span>
+                        <span class="star" data-rating="5" onclick="setRating(5)">☆</span>
+                    </div>
+                    <input type="hidden" id="review-rating" required>
+                </div>
+                <div class="form-group">
+                    <label>Ваш відгук:</label>
+                    <textarea id="review-comment" rows="5" required placeholder="Поділіться вашим досвідом..."></textarea>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="submit" class="btn-primary">Опублікувати відгук</button>
+                    <button type="button" onclick="closeReviewModal()" class="btn-secondary">Скасувати</button>
+                </div>
+            </form>
+            <div id="review-error" class="error"></div>
         </div>
     </div>
 </div>
+
+<style>
+.tab-button {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+.tab-button:hover {
+    color: var(--primary-color);
+}
+
+.active-tab {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.star {
+    cursor: pointer;
+    color: #ddd;
+    transition: color 0.2s;
+}
+
+.star:hover,
+.star.active {
+    color: #f59e0b;
+}
+
+.my-review-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.my-review-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.my-review-card .review-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.my-review-card .review-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+</style>
+
 <script>
 let currentUser = null;
+let currentReviewType = 'clinic';
+let selectedRating = 0;
 
 async function loadProfile() {
     const token = localStorage.getItem('access_token');
-    const refreshToken = localStorage.getItem('refresh_token');
 
     if (!token) {
         window.location.href = '/login/';
@@ -78,7 +212,7 @@ async function loadProfile() {
                     <p><strong>Адреса:</strong> ${currentUser.address || 'Не вказано'}</p>
                     <p><strong>Роль:</strong> ${currentUser.role}</p>
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <div style="display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap;">
                     <button onclick="openEditModal()" class="btn-primary">Редагувати профіль</button>
                     <a href="/appointments/" class="btn-secondary">Мої записи</a>
                     <a href="/favorites/" class="btn-secondary">Обрані лікарі</a>
@@ -86,6 +220,9 @@ async function loadProfile() {
                 </div>
             </div>
         `;
+
+        loadClinicReviews();
+        loadDoctorReviews();
     } catch (error) {
         console.error('Error loading profile:', error);
         document.getElementById('profile-content').innerHTML = `
@@ -97,6 +234,220 @@ async function loadProfile() {
     }
 }
 
+
+function switchTab(type) {
+    currentReviewType = type;
+
+    document.getElementById('clinic-tab').classList.toggle('active-tab', type === 'clinic');
+    document.getElementById('doctor-tab').classList.toggle('active-tab', type === 'doctor');
+
+
+    document.getElementById('clinic-reviews-section').style.display = type === 'clinic' ? 'block' : 'none';
+    document.getElementById('doctor-reviews-section').style.display = type === 'doctor' ? 'block' : 'none';
+}
+
+
+async function loadClinicReviews() {
+    try {
+        const response = await fetchAPI('/api/clinic-reviews/?user=me');
+        const data = await response.json();
+        const reviews = data.results || data;
+
+        const list = document.getElementById('clinic-reviews-list');
+
+        if (reviews.length === 0) {
+            list.innerHTML = '<p class="no-results">Ви ще не залишали відгуків про клініки</p>';
+            return;
+        }
+
+        list.innerHTML = reviews.map(review => `
+            <div class="my-review-card">
+                <h3>${review.clinic_name}</h3>
+                <div class="review-meta">
+                    <span class="rating">⭐ ${review.rating}/5</span>
+                    <span>${new Date(review.created_at).toLocaleDateString('uk-UA')}</span>
+                </div>
+                <p>${review.comment}</p>
+                <div class="review-actions">
+                    <button onclick="editReview('clinic', ${review.id})" class="btn-secondary">Редагувати</button>
+                    <button onclick="deleteReview('clinic', ${review.id})" class="btn-danger">Видалити</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading clinic reviews:', error);
+        document.getElementById('clinic-reviews-list').innerHTML =
+            '<p class="error">Помилка завантаження відгуків</p>';
+    }
+}
+
+async function loadDoctorReviews() {
+    try {
+        const response = await fetchAPI('/api/doctor-reviews/?user=me');
+        const data = await response.json();
+        const reviews = data.results || data;
+
+        const list = document.getElementById('doctor-reviews-list');
+
+        if (reviews.length === 0) {
+            list.innerHTML = '<p class="no-results">Ви ще не залишали відгуків про лікарів</p>';
+            return;
+        }
+
+        list.innerHTML = reviews.map(review => `
+            <div class="my-review-card">
+                <h3>Лікар: ${review.doctor_name}</h3>
+                <div class="review-meta">
+                    <span class="rating">⭐ ${review.rating}/5</span>
+                    <span>${new Date(review.created_at).toLocaleDateString('uk-UA')}</span>
+                </div>
+                <p>${review.comment}</p>
+                <div class="review-actions">
+                    <button onclick="editReview('doctor', ${review.id})" class="btn-secondary">Редагувати</button>
+                    <button onclick="deleteReview('doctor', ${review.id})" class="btn-danger">Видалити</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading doctor reviews:', error);
+        document.getElementById('doctor-reviews-list').innerHTML =
+            '<p class="error">Помилка завантаження відгуків</p>';
+    }
+}
+
+
+async function openReviewModal(type) {
+    currentReviewType = type;
+    selectedRating = 0;
+
+    document.getElementById('review-modal-title').textContent =
+        type === 'clinic' ? 'Додати відгук про клініку' : 'Додати відгук про лікаря';
+    document.getElementById('review-entity-label').textContent =
+        type === 'clinic' ? 'Оберіть клініку:' : 'Оберіть лікаря:';
+
+
+    document.getElementById('review-form').reset();
+    document.getElementById('review-rating').value = '';
+    document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+
+
+    const select = document.getElementById('review-entity');
+    select.innerHTML = '<option value="">Завантаження...</option>';
+
+    try {
+        const endpoint = type === 'clinic' ? '/api/clinics/' : '/api/doctors/';
+        const response = await fetchAPI(endpoint);
+        const data = await response.json();
+        const entities = data.results || data;
+
+        select.innerHTML = '<option value="">Оберіть...</option>' +
+            entities.map(entity => `
+                <option value="${entity.id}">
+                    ${type === 'clinic' ? entity.name : entity.full_name}
+                </option>
+            `).join('');
+    } catch (error) {
+        select.innerHTML = '<option value="">Помилка завантаження</option>';
+    }
+
+    document.getElementById('review-modal').style.display = 'flex';
+}
+
+function closeReviewModal() {
+    document.getElementById('review-modal').style.display = 'none';
+    document.getElementById('review-error').textContent = '';
+}
+
+function setRating(rating) {
+    selectedRating = rating;
+    document.getElementById('review-rating').value = rating;
+
+    document.querySelectorAll('.star').forEach((star, index) => {
+        star.classList.toggle('active', index < rating);
+        star.textContent = index < rating ? '★' : '☆';
+    });
+}
+
+document.getElementById('review-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorDiv = document.getElementById('review-error');
+    errorDiv.textContent = '';
+
+    const entityId = document.getElementById('review-entity').value;
+    const rating = document.getElementById('review-rating').value;
+    const comment = document.getElementById('review-comment').value;
+
+    if (!rating) {
+        errorDiv.textContent = 'Будь ласка, оберіть рейтинг';
+        return;
+    }
+
+    const data = {
+        rating: parseInt(rating),
+        comment: comment
+    };
+
+    if (currentReviewType === 'clinic') {
+        data.clinic = entityId;
+    } else {
+        data.doctor = entityId;
+    }
+
+    try {
+        const endpoint = currentReviewType === 'clinic' ?
+            '/api/clinic-reviews/' : '/api/doctor-reviews/';
+
+        const response = await fetchAPI(endpoint, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            alert('Відгук успішно додано!');
+            closeReviewModal();
+            if (currentReviewType === 'clinic') {
+                loadClinicReviews();
+            } else {
+                loadDoctorReviews();
+            }
+        } else {
+            const error = await response.json();
+            errorDiv.textContent = error.detail || 'Помилка при додаванні відгуку';
+        }
+    } catch (error) {
+        errorDiv.textContent = 'Помилка підключення до сервера';
+    }
+});
+
+async function deleteReview(type, reviewId) {
+    if (!confirm('Ви впевнені, що хочете видалити цей відгук?')) {
+        return;
+    }
+
+    try {
+        const endpoint = type === 'clinic' ?
+            `/api/clinic-reviews/${reviewId}/` : `/api/doctor-reviews/${reviewId}/`;
+
+        const response = await fetchAPI(endpoint, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            alert('Відгук успішно видалено!');
+            if (type === 'clinic') {
+                loadClinicReviews();
+            } else {
+                loadDoctorReviews();
+            }
+        } else {
+            alert('Помилка при видаленні відгуку');
+        }
+    } catch (error) {
+        alert('Помилка підключення до сервера');
+    }
+}
+
+
 function openEditModal() {
     document.getElementById('edit-first-name').value = currentUser.first_name;
     document.getElementById('edit-last-name').value = currentUser.last_name;
@@ -104,19 +455,18 @@ function openEditModal() {
     document.getElementById('edit-phone').value = currentUser.phone || '';
     document.getElementById('edit-address').value = currentUser.address || '';
 
-    const modal = document.getElementById('edit-modal');
-    modal.style.display = 'flex';
+    document.getElementById('edit-modal').style.display = 'flex';
 }
 
 function closeEditModal() {
     document.getElementById('edit-modal').style.display = 'none';
-    document.getElementById('edit-error').style.display = 'none';
+    document.getElementById('edit-error').textContent = '';
 }
 
 document.getElementById('edit-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const errorDiv = document.getElementById('edit-error');
-    errorDiv.style.display = 'none';
+    errorDiv.textContent = '';
 
     const data = {
         first_name: document.getElementById('edit-first-name').value,
@@ -138,11 +488,9 @@ document.getElementById('edit-form').addEventListener('submit', async (e) => {
             loadProfile();
         } else {
             const error = await response.json();
-            errorDiv.style.display = 'block';
             errorDiv.textContent = JSON.stringify(error);
         }
     } catch (error) {
-        errorDiv.style.display = 'block';
         errorDiv.textContent = 'Помилка підключення до сервера';
     }
 });

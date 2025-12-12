@@ -1,49 +1,37 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from users.models import User
+from django.contrib.auth import get_user_model
 from clinics.models import Clinic
 from doctors.models import Doctor
 
+User = get_user_model()
 
 class ClinicReview(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clinic_reviews')
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='reviews')
-    rating = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name='Оцінка'
-    )
-    comment = models.TextField(verbose_name='Коментар')
-    is_approved = models.BooleanField(default=False, verbose_name='Схвалено')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clinic_reviews')
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])  # 1-5 stars
+    comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.user.username} -> {self.clinic.name} ({self.rating}/5)"
-
     class Meta:
+        unique_together = ('clinic', 'user')  # One review per user per clinic
         ordering = ['-created_at']
-        unique_together = ['user', 'clinic']
-        verbose_name = 'Відгук про клініку'
-        verbose_name_plural = 'Відгуки про клініки'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.clinic.name} - {self.rating}★"
 
 
 class DoctorReview(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor_reviews')
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='reviews')
-    rating = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name='Оцінка'
-    )
-    comment = models.TextField(verbose_name='Коментар')
-    is_approved = models.BooleanField(default=False, verbose_name='Схвалено')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor_reviews')
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
+    comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.user.username} -> {self.doctor.full_name} ({self.rating}/5)"
-
     class Meta:
+        unique_together = ('doctor', 'user')
         ordering = ['-created_at']
-        unique_together = ['user', 'doctor']
-        verbose_name = 'Відгук про лікаря'
-        verbose_name_plural = 'Відгуки про лікарів'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.doctor.full_name} - {self.rating}★"

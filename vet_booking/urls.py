@@ -23,7 +23,6 @@ router.register(r'favorites', FavoriteDoctorViewSet, basename='favorite-doctor')
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # API endpoints
     path('api/', include(router.urls)),
 
     # Authentication
@@ -33,8 +32,9 @@ urlpatterns = [
     path('api/auth/logout/', LogoutView.as_view(), name='logout'),
     path('api/auth/profile/', UserProfileView.as_view(), name='profile'),
 
-    # Frontend pages
+
     path('', include('frontend.urls')),
+    path('api/', include('reviews.urls')),
 ]
 
 if settings.DEBUG:
