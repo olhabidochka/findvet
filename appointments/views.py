@@ -1,12 +1,14 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+
+from .google_calendar import GoogleCalendarService
 from .models import Appointment
 from .serializers import (AppointmentListSerializer, AppointmentDetailSerializer,
                           AppointmentCreateSerializer, AppointmentUpdateSerializer)
-from .google_calendar import GoogleCalendarService
 
 
 class AppointmentViewSet(viewsets.ModelViewSet):
@@ -33,9 +35,13 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         return AppointmentDetailSerializer
 
     def perform_create(self, serializer):
-        appointment = serializer.save(user=self.request.user)
+        try:
+            appointment = serializer.save(user=self.request.user)
+        except IntegrityError:
+            raise ValidationError({
+                'non_field_errors': ['Цей час вже зайнятий.']
+            })
 
-        # Try to create Google Calendar event
         try:
             calendar_service = GoogleCalendarService()
             event_id = calendar_service.create_appointment_event(appointment)
@@ -46,9 +52,15 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             print(f"Could not create calendar event: {e}")
 
     def perform_update(self, serializer):
-        appointment = serializer.save()
 
-        # Try to update Google Calendar event
+        try:
+            appointment = serializer.save()
+        except IntegrityError:
+            raise ValidationError({
+                'non_field_errors': ['Цей час вже зайнятий.']
+            })
+
+
         if appointment.google_calendar_event_id:
             try:
                 calendar_service = GoogleCalendarService()
@@ -61,6 +73,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
+
         appointment = self.get_object()
 
         if appointment.status == 'cancelled':
@@ -71,7 +84,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
         appointment.status = 'cancelled'
         appointment.save()
-
 
         if appointment.google_calendar_event_id:
             try:
@@ -89,6 +101,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def confirm(self, request, pk=None):
+
         appointment = self.get_object()
 
 
@@ -96,6 +109,13 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             return Response(
                 {'detail': 'Недостатньо прав.'},
                 status=status.HTTP_403_FORBIDDEN
+            )
+
+
+        if appointment.status == 'confirmed':
+            return Response(
+                {'detail': 'Цей запис вже підтверджено.'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         appointment.status = 'confirmed'

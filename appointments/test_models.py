@@ -83,7 +83,7 @@ class TestAppointmentModel:
         assert appointment.doctor == doctor
         assert appointment.service == service
         assert appointment.status == 'pending'
-        assert str(appointment) == f"{user.username} -> {doctor.full_name} ({tomorrow} 14:00:00)"
+        assert str(appointment) == f"{user.username} -> {doctor.full_name} ({tomorrow} 14:00)"
 
     def test_appointment_default_status(self, db):
 

@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from datetime import datetime, time as dt_time
 from users.models import User
 from doctors.models import Doctor
 from services.models import Service
@@ -31,13 +32,32 @@ class Appointment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} -> {self.doctor.full_name} ({self.appointment_date} {self.appointment_time})"
+
+        if isinstance(self.appointment_time, dt_time):
+            time_str = self.appointment_time.strftime('%H:%M:%S')
+        else:
+            time_str = str(self.appointment_time)
+        return f"{self.user.username} -> {self.doctor.full_name} ({self.appointment_date} {time_str})"
 
     @property
     def is_past(self):
-        appointment_datetime = timezone.make_aware(
-            timezone.datetime.combine(self.appointment_date, self.appointment_time)
-        )
+
+        if isinstance(self.appointment_time, str):
+
+            try:
+                time_obj = datetime.strptime(self.appointment_time, '%H:%M:%S').time()
+            except ValueError:
+                time_obj = datetime.strptime(self.appointment_time, '%H:%M').time()
+        else:
+            time_obj = self.appointment_time
+
+
+        appointment_datetime = datetime.combine(self.appointment_date, time_obj)
+
+
+        if timezone.is_naive(appointment_datetime):
+            appointment_datetime = timezone.make_aware(appointment_datetime)
+
         return appointment_datetime < timezone.now()
 
     class Meta:
