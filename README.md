@@ -48,7 +48,7 @@ cd <назва_папки_проєкту>
 
 ### 2. Створення віртуального середовища
 ```bash
-python3.12 -m venv venv
+python3 -m venv venv
 ```
 ```bash
 source venv/bin/activate   # Mac/Linux
@@ -82,3 +82,51 @@ python manage.py runserver
 ```bash
 python manage.py test
 ```
+
+## Структура тестів
+#### Позитивні тести
+
+**TestAppointmentListPositive**
+- `test_list_appointments_authenticated` - Перевірка отримання списку записів авторизованим користувачем
+- `test_list_appointments_filtering_by_status` - Перевірка фільтрації записів за статусом
+
+**TestAppointmentCreatePositive**
+- `test_create_appointment_success` - Успішне створення запису на прийом
+
+**TestAppointmentDetailPositive**
+- `test_get_appointment_detail` - Отримання детальної інформації про запис
+
+**TestAppointmentCancelPositive**
+- `test_cancel_appointment_success` - Успішне скасування запису
+
+#### Негативні тести
+
+**TestAppointmentAuthenticationNegative**
+- `test_list_appointments_unauthenticated` - Спроба отримати список без аутентифікації
+- `test_create_appointment_unauthenticated` - Спроба створити запис без аутентифікації
+
+**TestAppointmentCreateNegative**
+- `test_create_appointment_missing_required_fields` - Створення без обов'язкових полів
+- `test_create_appointment_nonexistent_doctor` - Створення з неіснуючим лікарем
+- `test_create_appointment_duplicate_slot` - Створення на зайнятий час
+- `test_create_appointment_past_date` - Створення на минулу дату
+
+**TestAppointmentAccessNegative**
+- `test_user_cannot_access_other_users_appointments` - Користувач не може бачити чужі записи
+- `test_user_cannot_cancel_other_users_appointments` - Користувач не може скасувати чужі записи
+
+**TestAppointmentCancelNegative**
+- `test_cancel_nonexistent_appointment` - Скасування неіснуючого запису
+- `test_cancel_already_cancelled_appointment` - Повторне скасування запису
+
+**TestAppointmentUpdateNegative**
+- `test_update_appointment_to_occupied_slot` - Оновлення на зайнятий час
+
+### Unit Tests (`appointments/test_models.py`)
+
+**TestAppointmentModel**
+- `test_create_appointment` - Базове створення моделі
+- `test_appointment_default_status` - Перевірка статусу за замовчуванням
+- `test_appointment_is_past_property` - Тестування властивості is_past
+- `test_appointment_unique_constraint` - Перевірка унікальності часу
+- `test_appointment_ordering` - Перевірка сортування
