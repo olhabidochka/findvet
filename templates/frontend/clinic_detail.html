@@ -11,9 +11,25 @@
 
 <script>
     const clinicId = {{ clinic_id }};
-    const GOOGLE_MAPS_API_KEY = 'AIzaSyD7jwlB6HR84mDv1T00rwSFEyzpEY-Z13g';
+    let GOOGLE_MAPS_API_KEY = '';
+
+
+  async function loadGoogleMapsKey() {
+    try {
+        const response = await fetch('/api/config/google-maps-key/');
+        const data = await response.json();
+        console.log('API Key response:', data);
+        GOOGLE_MAPS_API_KEY = data.apiKey;
+        console.log('Loaded API Key:', GOOGLE_MAPS_API_KEY ? 'Yes' : 'No');
+    } catch (error) {
+        console.error('Error loading Google Maps API key:', error);
+    }
+}
 
     async function loadClinic() {
+
+        await loadGoogleMapsKey();
+
         try {
             const response = await fetchAPI(`/api/clinics/${clinicId}/`);
             const clinic = await response.json();
@@ -198,20 +214,27 @@
             return;
         }
 
+
+        if (!GOOGLE_MAPS_API_KEY) {
+            console.error('Google Maps API key not loaded');
+            document.getElementById('map').innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 400px; background: #f5f5f5; border-radius: 8px;">
+                    <p style="color: #666;">Помилка завантаження карти</p>
+                </div>
+            `;
+            return;
+        }
+
         let mapUrl;
 
-
         if (lat && lng) {
-            // Use coordinates for precise pin location
             mapUrl = `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${lat},${lng}&zoom=16`;
             console.log(`Map initialized with coordinates: ${lat}, ${lng}`);
         } else if (address && city) {
-            // Fallback to address search
             const mapQuery = encodeURIComponent(`${address}, ${city}, Ukraine`);
             mapUrl = `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${mapQuery}`;
             console.log(`Map initialized with address: ${address}, ${city}`);
         } else {
-            // No location data available
             document.getElementById('map').innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: center; height: 400px; background: #f5f5f5; border-radius: 8px;">
                     <p style="color: #666;">Координати місцезнаходження не вказані</p>
@@ -222,6 +245,7 @@
 
         mapIframe.src = mapUrl;
     }
+
 
     loadClinic();
 

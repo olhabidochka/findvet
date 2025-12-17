@@ -10,7 +10,7 @@ from services.views import ServiceViewSet
 from appointments.views import AppointmentViewSet
 from reviews.views import ClinicReviewViewSet, DoctorReviewViewSet
 from users.views import UserRegistrationView, UserProfileView, LogoutView
-
+from clinics.views import get_google_maps_key
 router = DefaultRouter()
 router.register(r'clinics', ClinicViewSet, basename='clinic')
 router.register(r'doctors', DoctorViewSet, basename='doctor')
@@ -23,6 +23,7 @@ router.register(r'favorites', FavoriteDoctorViewSet, basename='favorite-doctor')
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+    path('api/config/google-maps-key/', get_google_maps_key, name='google-maps-key'),
     path('api/', include(router.urls)),
 
     # Authentication

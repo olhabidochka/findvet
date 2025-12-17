@@ -1,8 +1,11 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from decouple import config, Csv
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = 'your-secret-key-here-change-in-production'
 
@@ -63,6 +66,22 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'vet_booking.wsgi.application'
+# Google Maps API Key
+GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='')
+
+# Google Calendar API
+GOOGLE_CALENDAR_CLIENT_ID = config('GOOGLE_CALENDAR_CLIENT_ID', default='')
+GOOGLE_CALENDAR_CLIENT_SECRET = config('GOOGLE_CALENDAR_CLIENT_SECRET', default='')
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 
 DATABASES = {
     'default': {
@@ -126,5 +145,5 @@ CORS_ALLOW_CREDENTIALS = True
 LOGIN_URL = '/login/'
 
 # Google API settings
-GOOGLE_MAPS_API_KEY = 'your-google-maps-api-key'
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
 GOOGLE_CALENDAR_CREDENTIALS = BASE_DIR / 'credentials.json'
